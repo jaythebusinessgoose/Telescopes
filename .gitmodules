@@ -1,0 +1,3 @@
+[submodule "ButtonPrompts"]
+	path = ButtonPrompts
+	url = https://github.com/jaythebusinessgoose/ButtonPrompts
