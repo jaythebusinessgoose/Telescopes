@@ -165,31 +165,37 @@ local function activate()
         if #players < 1 or not telescopes then return end
         
         local player = players[1]
-        for _, telescope in ipairs(telescopes) do
-            if telescope and get_entity(telescope) and player.layer == get_entity(telescope).layer and distance(player.uid, telescope) <= 1 and player:is_button_pressed(BUTTON.DOOR) then
-                -- Begin telescope interaction when the door button is pressed within a tile of the telescope.
-                telescope_activated = true
-                telescope_was_activated = nil
-                telescope_button_closed = false
-                -- Save the previous zoom level so that we can correct the camera's zoom when exiting the telescope.
-                telescope_previous_zoom = get_zoom_level()
-                -- Do not focus on the player while interacting with the telescope.
-                state.camera.focused_entity_uid = -1
-                local width, _ = size_of_level(level)
-                -- Set the x position of the camera to the half-way point of the level. The 2.5 is added due to the amount
-                -- of concrete border that is shown at the edges of the level.
-                state.camera.focus_x = width * 5 + 2.5
-                -- 30 is a good zoom level to fit a 4-room wide level width-wise. For larger or smaller levels, this value should be
-                -- adjusted. Also, it should be adjusted to fit height-wise if the level scrolls horizontally.
-                zoom(30)
-                
-                -- While looking through the telescope, the player should not be able to make any inputs. Instead, the movement
-                -- keys will move the camera and the bomb key will dismiss the telescope.
-                steal_input(player.uid)
-                button_prompts.hide_button_prompts(true)
-                break	
+        if not telescope_activated and telescope_was_activated == nil then
+            if not telescope_button_closed and not player:is_button_pressed(BUTTON.DOOR) then
+                telescope_button_closed = true
+            end
+            for _, telescope in ipairs(telescopes) do
+                if telescope_button_closed and telescope and get_entity(telescope) and player.layer == get_entity(telescope).layer and distance(player.uid, telescope) <= 1 and player:is_button_pressed(BUTTON.DOOR) then
+                    -- Begin telescope interaction when the door button is pressed within a tile of the telescope.
+                    telescope_activated = true
+                    telescope_was_activated = nil
+                    telescope_button_closed = false
+                    -- Save the previous zoom level so that we can correct the camera's zoom when exiting the telescope.
+                    telescope_previous_zoom = get_zoom_level()
+                    -- Do not focus on the player while interacting with the telescope.
+                    state.camera.focused_entity_uid = -1
+                    local width, _ = size_of_level(level)
+                    -- Set the x position of the camera to the half-way point of the level. The 2.5 is added due to the amount
+                    -- of concrete border that is shown at the edges of the level.
+                    state.camera.focus_x = width * 5 + 2.5
+                    -- 30 is a good zoom level to fit a 4-room wide level width-wise. For larger or smaller levels, this value should be
+                    -- adjusted. Also, it should be adjusted to fit height-wise if the level scrolls horizontally.
+                    zoom(30)
+
+                    -- While looking through the telescope, the player should not be able to make any inputs. Instead, the movement
+                    -- keys will move the camera and the bomb key will dismiss the telescope.
+                    steal_input(player.uid)
+                    button_prompts.hide_button_prompts(true)
+                    break
+                end
             end
         end
+
         if telescope_activated then
             -- Gets a bitwise integer that contains the set of pressed buttons while the input is stolen.
             local buttons = read_stolen_input(player.uid)
@@ -203,6 +209,7 @@ local function activate()
                 telescope_previous_zoom = nil
                 -- Make the camera follow the player again.
                 state.camera.focused_entity_uid = player.uid
+                telescope_button_closed = not test_flag(buttons, 6)
                 return
             end
             
