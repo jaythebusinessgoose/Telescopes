@@ -26,8 +26,8 @@ local reset_variable_callback = nil
 local telescopes = {}
 local telescope_activated = false 
 local telescope_was_activated = nil
-local telescope_activated_time = nil
 local telescope_previous_zoom = nil
+local telescope_button_closed = false
 
 local function reset_telescopes()
 	if telescope_previous_zoom then
@@ -36,7 +36,7 @@ local function reset_telescopes()
     telescopes = {}
     telescope_activated = false
     telescope_was_activated = nil
-    telescope_activated_time = nil
+    telescope_button_closed = false
     telescope_previous_zoom = nil
 end
 
@@ -111,8 +111,11 @@ end
 -- Checks if a valid dismissal input is being pressed.
 -- inputs: Bitmasked inputs that are being pressed, to be checked.
 local function test_dismissal_input(inputs)
-    local telescope_activated_long =
-        telescope_activated_time and state.time_level - telescope_activated_time > 40
+    if not telescope_button_closed and not test_flag(inputs, 6) then
+        -- Re-activate the telescope button as a potential dismissal button once it has been
+        -- released.
+        telescope_button_closed = true
+    end
     -- 1 = jump, 2 = whip, 3 = bomb, 4 = rope, 6 = Door
     if valid_inputs.jump and test_flag(inputs, 1) then
         return true
@@ -122,7 +125,7 @@ local function test_dismissal_input(inputs)
         return true
     elseif valid_inputs.rope and test_flag(inputs, 4) then
         return true
-    elseif valid_inputs.door and telescope_activated_long and test_flag(inputs, 6) then
+    elseif valid_inputs.door and telescope_button_closed and test_flag(inputs, 6) then
         -- Only allow the door button to deactivate the telescope after a certain amount of time so
         -- that it does not dismiss immediately while being held.
         return true
@@ -167,7 +170,7 @@ local function activate()
                 -- Begin telescope interaction when the door button is pressed within a tile of the telescope.
                 telescope_activated = true
                 telescope_was_activated = nil
-                telescope_activated_time = state.time_level
+                telescope_button_closed = false
                 -- Save the previous zoom level so that we can correct the camera's zoom when exiting the telescope.
                 telescope_previous_zoom = get_zoom_level()
                 -- Do not focus on the player while interacting with the telescope.
@@ -195,7 +198,6 @@ local function activate()
                 -- Keep track of the time that the telescope was deactivated. This will allow us to enable the player's
                 -- inputs later so that the same input isn't recognized again to cause a bomb to be thrown or another action.
                 telescope_was_activated = state.time_level
-                telescope_activated_time = nil
                 -- Zoom back to the original zoom level.
                 zoom(telescope_previous_zoom)
                 telescope_previous_zoom = nil
