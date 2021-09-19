@@ -2,12 +2,26 @@ local button_prompts = require('ButtonPrompts/button_prompts')
 define_tile_code("telescope")
 define_tile_code("telescope_left")
 
+local INPUTS = {
+    JUMP = 1,
+    WHIP = 2,
+    BOMB = 4,
+    ROPE = 8,
+    RUN = 16,
+    DOOR = 32,
+    MENU = 64,
+    JOURNAL = 128,
+    LEFT = 256,
+    RIGHT = 512,
+    UP = 1024,
+    DOWN = 2048,
+}
+
 local active = false
 local telescope_right_tc = nil
 local telescope_left_tc = nil
 local telescope_camera_function = nil
 local reset_variable_callback = nil
-
 
 local telescopes = {}
 local telescope_activated = false 
@@ -24,6 +38,96 @@ local function reset_telescopes()
     telescope_was_activated = nil
     telescope_activated_time = nil
     telescope_previous_zoom = nil
+end
+
+local valid_inputs = {
+    jump = true,
+    whip = true,
+    bomb = true,
+    rope = true,
+    door = true,
+}
+
+-- Enable an input as a way of dismissing the telescope. Valid inputs are:
+-- - INPUTS.JUMP
+-- - INPUTS.WHIP
+-- - INPUTS.BOMB
+-- - INPUTS.ROPE
+-- - INPUTS.DOOR
+--
+-- By default, all valid inputs are enabled.
+local function allow_dismissal_input(input)
+    if input == INPUTS.JUMP then
+        valid_inputs.jump = true
+    elseif input == INPUTS.WHIP then
+        valid_inputs.whip = true
+    elseif input == INPUTS.BOMB then
+        valid_inputs.bomb = true
+    elseif input == INPUTS.ROPE then
+        valid_inputs.rope = true
+    elseif input == INPUTS.DOOR then
+        valid_inputs.door = true
+    elseif input == INPUTS.LEFT or input == INPUTS.RIGHT or input == INPUTS.UP or input == INPUTS.DOWN then
+        error("Cannot use a directional input as a dismissal input.")
+    elseif input == INPUTS.JOURNAL then
+        error("Cannot use journal button as a dismissal input.")
+    elseif input == INPUTS.MENU then
+        error("Cannot use menu button as a dismissal input.")
+    else
+        error("Invalid input. Please use one of: INPUTS.JUMP, INPUTS.WHIP, INPUTS.BOMB, INPUTS.ROPE, INPUTS.DOOR.")
+    end
+end
+
+-- Disable an input so that pressing it does not dismiss the telescope. Valid inputs are:
+-- - INPUTS.JUMP
+-- - INPUTS.WHIP
+-- - INPUTS.BOMB
+-- - INPUTS.ROPE
+-- - INPUTS.DOOR
+--
+-- By default, all valid inputs are enabled.
+local function disable_dismissal_input(input)
+    if input == INPUTS.JUMP then
+        valid_inputs.jump = false
+    elseif input == INPUTS.WHIP then
+        valid_inputs.whip = false
+    elseif input == INPUTS.BOMB then
+        valid_inputs.bomb = false
+    elseif input == INPUTS.ROPE then
+        valid_inputs.rope = false
+    elseif input == INPUTS.DOOR then
+        valid_inputs.door = false
+    elseif input == INPUTS.LEFT or input == INPUTS.RIGHT or input == INPUTS.UP or input == INPUTS.DOWN then
+        error("Cannot use a directional input as a dismissal input.")
+    elseif input == INPUTS.JOURNAL then
+        error("Cannot use journal button as a dismissal input.")
+    elseif input == INPUTS.MENU then
+        error("Cannot use menu button as a dismissal input.")
+    else
+        error("Invalid input. Please use one of: INPUTS.JUMP, INPUTS.WHIP, INPUTS.BOMB, INPUTS.ROPE, INPUTS.DOOR.")
+    end
+end
+
+-- Checks if a valid dismissal input is being pressed.
+-- inputs: Bitmasked inputs that are being pressed, to be checked.
+local function test_dismissal_input(inputs)
+    local telescope_activated_long =
+        telescope_activated_time and state.time_level - telescope_activated_time > 40
+    -- 1 = jump, 2 = whip, 3 = bomb, 4 = rope, 6 = Door
+    if valid_inputs.jump and test_flag(inputs, 1) then
+        return true
+    elseif valid_inputs.whip and test_flag(inputs, 2) then
+        return true
+    elseif valid_inputs.bomb and test_flag(inputs, 3) then
+        return true
+    elseif valid_inputs.rope and test_flag(inputs, 4) then
+        return true
+    elseif valid_inputs.door and telescope_activated_long and test_flag(inputs, 6) then
+        -- Only allow the door button to deactivate the telescope after a certain amount of time so
+        -- that it does not dismiss immediately while being held.
+        return true
+    end
+    return false
 end
 
 local function activate()
@@ -86,9 +190,7 @@ local function activate()
         if telescope_activated then
             -- Gets a bitwise integer that contains the set of pressed buttons while the input is stolen.
             local buttons = read_stolen_input(player.uid)
-            local telescope_activated_long = telescope_activated_time and state.time_level - telescope_activated_time > 40
-            -- 1 = jump, 2 = whip, 3 = bomb, 4 = rope, 6 = Door
-            if test_flag(buttons, 1) or test_flag(buttons, 2) or test_flag(buttons, 3) or test_flag(buttons, 4) or (telescope_activated_long and test_flag(buttons, 6)) then
+            if test_dismissal_input(buttons) then
                 telescope_activated = false
                 -- Keep track of the time that the telescope was deactivated. This will allow us to enable the player's
                 -- inputs later so that the same input isn't recognized again to cause a bomb to be thrown or another action.
@@ -160,6 +262,9 @@ set_callback(function(ctx)
 end, ON.LOAD)
 
 return {
+    INPUTS = INPUTS,
+    allow_dismissal_input = allow_dismissal_input,
+    disable_dismissal_input = disable_dismissal_input,
     activate = activate,
     deactivate = deactivate,
 }
