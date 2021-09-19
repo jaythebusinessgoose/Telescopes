@@ -67,7 +67,10 @@ local function allow_dismissal_input(input)
         valid_inputs.rope = true
     elseif input == INPUTS.DOOR then
         valid_inputs.door = true
-    elseif input == INPUTS.LEFT or input == INPUTS.RIGHT or input == INPUTS.UP or input == INPUTS.DOWN then
+    elseif input == INPUTS.LEFT or
+            input == INPUTS.RIGHT or
+            input == INPUTS.UP or
+            input == INPUTS.DOWN then
         error("Cannot use a directional input as a dismissal input.")
     elseif input == INPUTS.JOURNAL then
         error("Cannot use journal button as a dismissal input.")
@@ -97,7 +100,10 @@ local function disable_dismissal_input(input)
         valid_inputs.rope = false
     elseif input == INPUTS.DOOR then
         valid_inputs.door = false
-    elseif input == INPUTS.LEFT or input == INPUTS.RIGHT or input == INPUTS.UP or input == INPUTS.DOWN then
+    elseif input == INPUTS.LEFT or
+            input == INPUTS.RIGHT or
+            input == INPUTS.UP or
+            input == INPUTS.DOWN then
         error("Cannot use a directional input as a dismissal input.")
     elseif input == INPUTS.JOURNAL then
         error("Cannot use journal button as a dismissal input.")
@@ -170,25 +176,34 @@ local function activate()
                 telescope_button_closed = true
             end
             for _, telescope in ipairs(telescopes) do
-                if telescope_button_closed and telescope and get_entity(telescope) and player.layer == get_entity(telescope).layer and distance(player.uid, telescope) <= 1 and player:is_button_pressed(BUTTON.DOOR) then
-                    -- Begin telescope interaction when the door button is pressed within a tile of the telescope.
+                if telescope_button_closed and
+                        telescope and get_entity(telescope) and
+                        player.layer == get_entity(telescope).layer and
+                        distance(player.uid, telescope) <= 1 and
+                        player:is_button_pressed(BUTTON.DOOR) then
+                    -- Begin telescope interaction when the door button is pressed within a tile of the
+                    -- telescope.
                     telescope_activated = true
                     telescope_was_activated = nil
                     telescope_button_closed = false
-                    -- Save the previous zoom level so that we can correct the camera's zoom when exiting the telescope.
+                    -- Save the previous zoom level so that we can correct the camera's zoom when
+                    -- exiting the telescope.
                     telescope_previous_zoom = get_zoom_level()
                     -- Do not focus on the player while interacting with the telescope.
                     state.camera.focused_entity_uid = -1
                     local width, _ = size_of_level(level)
-                    -- Set the x position of the camera to the half-way point of the level. The 2.5 is added due to the amount
+                    -- Set the x position of the camera to the half-way point of the level. The 2.5 is
+                    -- added due to the amount
                     -- of concrete border that is shown at the edges of the level.
                     state.camera.focus_x = width * 5 + 2.5
-                    -- 30 is a good zoom level to fit a 4-room wide level width-wise. For larger or smaller levels, this value should be
-                    -- adjusted. Also, it should be adjusted to fit height-wise if the level scrolls horizontally.
+                    -- 30 is a good zoom level to fit a 4-room wide level width-wise. For larger or
+                    -- smaller levels, this value should be adjusted. Also, it should be adjusted to
+                    -- fit height-wise if the level scrolls horizontally.
                     zoom(30)
 
-                    -- While looking through the telescope, the player should not be able to make any inputs. Instead, the movement
-                    -- keys will move the camera and the bomb key will dismiss the telescope.
+                    -- While looking through the telescope, the player should not be able to make any
+                    -- inputs. Instead, the movement keys will move the camera and the bomb key will
+                    -- dismiss the telescope.
                     steal_input(player.uid)
                     button_prompts.hide_button_prompts(true)
                     break
@@ -201,8 +216,9 @@ local function activate()
             local buttons = read_stolen_input(player.uid)
             if test_dismissal_input(buttons) then
                 telescope_activated = false
-                -- Keep track of the time that the telescope was deactivated. This will allow us to enable the player's
-                -- inputs later so that the same input isn't recognized again to cause a bomb to be thrown or another action.
+                -- Keep track of the time that the telescope was deactivated. This will allow us to
+                -- enable the player's inputs later so that the same input isn't recognized again to
+                -- cause a bomb to be thrown or another action.
                 telescope_was_activated = state.time_level
                 -- Zoom back to the original zoom level.
                 zoom(telescope_previous_zoom)
@@ -219,7 +235,8 @@ local function activate()
             local width, height = size_of_level(level)
             local camera_speed = .3
             local _, max_room_pos_y = get_room_pos(width, height)
-            -- Currently, all levels fit the width of the zoomed-out screen, so only handling moving up and down.
+            -- Currently, all levels fit the width of the zoomed-out screen, so only handling moving up
+            -- and down.
             if test_flag(buttons, 11) then -- up_key
                 state.camera.focus_y = state.camera.focus_y + camera_speed
                 if state.camera.focus_y > room_pos_y - 11 then
@@ -232,9 +249,9 @@ local function activate()
                 end
             end
         elseif telescope_was_activated ~= nil and state.time_level  - telescope_was_activated > 40 then
-            -- Re-activate the player's inputs 40 frames after the button was pressed to leave the telescope.
-            -- This gives plenty of time for the player to release the button that was pressed, but also doesn't feel
-            -- too long since it mostly occurs while the camera is moving back.
+            -- Re-activate the player's inputs 40 frames after the button was pressed to leave the
+            -- telescope. This gives plenty of time for the player to release the button that was pressed,
+            -- but also doesn't feel too long since it mostly occurs while the camera is moving back.
             return_input(player.uid)
             button_prompts.hide_button_prompts(false)
             telescope_was_activated = nil
