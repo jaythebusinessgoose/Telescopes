@@ -1,5 +1,5 @@
 local button_prompts = require('ButtonPrompts/button_prompts')
-define_tile_code("telescope")
+define_tile_code("telescope_right")
 define_tile_code("telescope_left")
 
 local INPUTS = {
@@ -315,7 +315,7 @@ local function activate()
     telescope_right_tc = set_pre_tile_code_callback(function(x, y, layer)
         spawn_telescope(x, y, layer, true)
         return true
-    end, "telescope")
+    end, "telescope_right")
 
     -- Telescope facing left.
     telescope_left_tc = set_pre_tile_code_callback(function(x, y, layer)
