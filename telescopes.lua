@@ -21,7 +21,7 @@ local active = false
 local telescope_right_tc = nil
 local telescope_left_tc = nil
 local telescope_camera_function = nil
-local reset_variable_callback = nil
+local reset_variable_callbacks = {}
 local hud_callback = nil
 
 local telescopes = {}
@@ -424,9 +424,13 @@ local function activate()
         end
     end, ON.RENDER_POST_HUD)
 
-    reset_variable_callback = set_callback(function()
+    reset_variable_callbacks[1] = set_callback(function()
         reset_telescopes()
     end, ON.PRE_LOAD_LEVEL_FILES)
+
+    reset_variable_callbacks[2] = set_callback(function()
+        reset_telescopes()
+    end, ON.RESET)
 end
 
 local function deactivate()
@@ -436,18 +440,23 @@ local function deactivate()
     if telescope_left_tc then
         clear_callback(telescope_left_tc)
     end
+    telescope_left_tc = nil
     if telescope_right_tc then
         clear_callback(telescope_right_tc)
     end
+    telescope_right_tc = nil
     if telescope_camera_function then
         clear_callback(telescope_camera_function)
     end
-    if reset_variable_callback then
+    telescope_camera_function = nil
+    for _, reset_variable_callback in ipairs(reset_variable_callbacks) do
         clear_callback(reset_variable_callback)
     end
+    reset_variable_callbacks = {}
     if hud_callback then
         clear_callback(hud_callback)
     end
+    hud_callback = nil
     button_prompts.deactivate()
 end
 
