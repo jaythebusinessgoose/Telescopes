@@ -27,19 +27,7 @@ local hud_callback = nil
 local telescopes = {}
 local telescope_activated = false 
 local telescope_was_activated = nil
-local telescope_previous_zoom = nil
 local telescope_button_closed = false
-
-local function reset_telescopes()
-	if telescope_previous_zoom then
-		zoom(telescope_previous_zoom)
-	end
-    telescopes = {}
-    telescope_activated = false
-    telescope_was_activated = nil
-    telescope_button_closed = false
-    telescope_previous_zoom = nil
-end
 
 local show_hud_buttons = true
 local function set_show_hud_buttons(show_buttons)
@@ -145,6 +133,23 @@ local function test_dismissal_input(inputs)
     return false
 end
 
+local max_zoom = 30
+local max_zoom_co = 22
+local min_zoom = 13.5
+local default_zoom = 13.5
+local function set_max_zoom(zoom)
+    max_zoom = zoom
+end
+local function set_max_zoom_co(zoom)
+    max_zoom_co = zoom
+end
+local function set_min_zoom(zoom)
+    min_zoom = zoom
+end
+local function set_default_zoom(zoom)
+    default_zoom = zoom
+end
+
 -- These are the ratios of zoom value to tiles visible on camera at that zoom level.
 -- This means that the width of the camera is equal to `get_zoom_level() * width_zoom_factor` and the
 -- height of the camera is equal to `get_zoom_level() * height_zoom_factor`.
@@ -178,7 +183,7 @@ local function zoom_level_fitting_bounds()
 
     -- If the level is very large, limit the zoom to 30 and allow the camera to scroll in both
     -- directions. Also, never zoom in from the default zoom value.
-    local max_zoom = 30
+    local max_zoom_level = max_zoom
     if state.theme == THEME.COSMIC_OCEAN then
         -- In the CO, the tiles beyond the loop don't start rendering until a certain distance
         -- from the player. Keep the max zoom small enough that the tiles aren't visible as they
@@ -186,9 +191,9 @@ local function zoom_level_fitting_bounds()
         --
         -- Some things may still look choppy when rendering in, such as very large background
         -- decorations, which will only load in when their center is close enough to load.
-        max_zoom = 22
+        max_zoom_level = max_zoom_co
     end
-    return math.max(math.min(max_zoom, preferred_zoom), 13.5)
+    return math.max(math.min(max_zoom_level, preferred_zoom), min_zoom)
 end
 
 local function camera_size_for_zoom_level(zoom_level)
@@ -282,6 +287,14 @@ local function camera_at_bounds()
             camera.focus_y <= max_bottom + tiny
 end
 
+local function reset_telescopes()
+    zoom(default_zoom)
+    telescopes = {}
+    telescope_activated = false
+    telescope_was_activated = nil
+    telescope_button_closed = false
+end
+
 local function activate()
     if active then return end
     active = true
@@ -330,9 +343,7 @@ local function activate()
                     telescope_activated = true
                     telescope_was_activated = nil
                     telescope_button_closed = false
-                    -- Save the previous zoom level so that we can correct the camera's zoom when
-                    -- exiting the telescope.
-                    telescope_previous_zoom = get_zoom_level()
+
                     -- Do not focus on the player while interacting with the telescope.
                     camera.focused_entity_uid = -1
 
@@ -361,8 +372,7 @@ local function activate()
                 -- cause a bomb to be thrown or another action.
                 telescope_was_activated = state.time_level
                 -- Zoom back to the original zoom level.
-                zoom(telescope_previous_zoom)
-                telescope_previous_zoom = nil
+                zoom(default_zoom)
                 -- Make the camera follow the player again.
                 state.camera.focused_entity_uid = player.uid
                 telescope_button_closed = not test_flag(buttons, 6)
@@ -451,6 +461,10 @@ return {
     allow_dismissal_input = allow_dismissal_input,
     disable_dismissal_input = disable_dismissal_input,
     set_show_hud_buttons = set_show_hud_buttons,
+    set_max_zoom = set_max_zoom,
+    set_max_zoom_co = set_max_zoom_co,
+    set_min_zoom = set_min_zoom,
+    set_default_zoom = set_default_zoom,
     activate = activate,
     deactivate = deactivate,
 }
