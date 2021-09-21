@@ -22,6 +22,7 @@ local telescope_right_tc = nil
 local telescope_left_tc = nil
 local telescope_camera_function = nil
 local reset_variable_callback = nil
+local hud_callback = nil
 
 local telescopes = {}
 local telescope_activated = false 
@@ -38,6 +39,11 @@ local function reset_telescopes()
     telescope_was_activated = nil
     telescope_button_closed = false
     telescope_previous_zoom = nil
+end
+
+local show_hud_buttons = true
+local function set_show_hud_buttons(show_buttons)
+    show_hud_buttons = show_buttons
 end
 
 local valid_inputs = {
@@ -262,6 +268,20 @@ local function move_camera_focus_within_bounds()
     end
 end
 
+local function camera_at_bounds()
+    if state.theme == THEME.COSMIC_OCEAN then
+        return false, false, false, false
+    end
+    local max_left, max_right, max_top, max_bottom = camera_focus_edges_for_expected_zoom_level()
+    local camera = state.camera
+
+    local tiny = 0.0001
+    return camera.focus_x <= max_left + tiny,
+            camera.focus_x >= max_right - tiny,
+            camera.focus_y >= max_top - tiny,
+            camera.focus_y <= max_bottom + tiny
+end
+
 local function activate()
     if active then return end
     active = true
@@ -375,6 +395,25 @@ local function activate()
         end
     end, ON.FRAME)
 
+    hud_callback = set_callback(function(ctx)
+        if not telescope_activated or not show_hud_buttons then return end
+        local buttonsx = .95
+        local buttonssize = .0014
+        local at_left, at_right, at_top, at_bottom = camera_at_bounds()
+        if not at_left then
+            ctx:draw_text("\u{8B}", -buttonsx, 0, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+        end
+        if not at_right then
+            ctx:draw_text("\u{8C}", buttonsx, 0, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+        end
+        if not at_top then
+            ctx:draw_text("\u{8D}", 0, .9, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+        end
+        if not at_bottom then
+            ctx:draw_text("\u{8E}", 0, -.8, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+        end
+    end, ON.RENDER_POST_HUD)
+
     reset_variable_callback = set_callback(function()
         reset_telescopes()
     end, ON.PRE_LOAD_LEVEL_FILES)
@@ -396,6 +435,9 @@ local function deactivate()
     if reset_variable_callback then
         clear_callback(reset_variable_callback)
     end
+    if hud_callback then
+        clear_callback(hud_callback)
+    end
     button_prompts.deactivate()
 end
 
@@ -408,6 +450,7 @@ return {
     INPUTS = INPUTS,
     allow_dismissal_input = allow_dismissal_input,
     disable_dismissal_input = disable_dismissal_input,
+    set_show_hud_buttons = set_show_hud_buttons,
     activate = activate,
     deactivate = deactivate,
 }
