@@ -67,7 +67,7 @@ Default: 22
 telescopes.set_max_zoom_co(30)
 ```
 
-## min_zoom
+### min_zoom
 
 Very small levels would require zooming in closer than the default zoom to fit the width of the level. To prevent zooming in, a minimum allowed zoom is used. This is also configurable, via `set_min_zoom`.
 
@@ -77,7 +77,7 @@ Default: 13.5
 telescopes.set_min_zoom(3)
 ```
 
-## default_zoom
+### default_zoom
 
 When the telescope is dismissed, the zoom level is set back to the default_zoom. By default, this is the same as the normal zoom level when playing the game. If this zoom is being changed, the default_zoom can be configured to match the desired zooming behavior via `set_default_zoom`.
 
