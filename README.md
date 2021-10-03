@@ -41,6 +41,16 @@ By default directional controls will show in the HUD when the telescope is activ
 telescopes.set_show_hud_buttons(false)
 ```
 
+The hud buttons are by default positioned at the edges of the screen. In the case that there is other UI near the edges of the screen, the hud buttons can be inset.
+
+```
+telescopes.set_hud_button_insets(top_inset, left_inset, bottom_inset, right_inset)
+```
+
+Positive insets move the hud closer to the center, whereas negative insets move the hud farther from the center.
+
+Insets use decimal values where the entire screen has a width and height of 2, so an inset of 1 in any dimension will move it close to the center.
+
 ## Zoom levels
 
 When activating a telescope, a zoom level is chosen so that the camera fits either the width or the height of the level, whichever is smaller. 

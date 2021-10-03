@@ -34,6 +34,14 @@ local function set_show_hud_buttons(show_buttons)
     show_hud_buttons = show_buttons
 end
 
+local hud_button_insets = {
+    top = 0, bottom = 0, left = 0, right = 0,
+}
+-- Update the position of the hud buttons in relation to their default positions.
+local function set_hud_button_insets(top, left, bottom, right)
+    hud_button_insets = { top = top, left = left, bottom = bottom, right = right}
+end
+
 local valid_inputs = {
     jump = true,
     whip = true,
@@ -408,19 +416,20 @@ local function activate()
     hud_callback = set_callback(function(ctx)
         if not telescope_activated or not show_hud_buttons then return end
         local buttonsx = .95
+        local buttonsy = .9
         local buttonssize = .0014
         local at_left, at_right, at_top, at_bottom = camera_at_bounds()
         if not at_left then
-            ctx:draw_text("\u{8B}", -buttonsx, 0, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+            ctx:draw_text("\u{8B}", -buttonsx + hud_button_insets.left, 0, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
         end
         if not at_right then
-            ctx:draw_text("\u{8C}", buttonsx, 0, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+            ctx:draw_text("\u{8C}", buttonsx - hud_button_insets.right, 0, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
         end
         if not at_top then
-            ctx:draw_text("\u{8D}", 0, .9, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+            ctx:draw_text("\u{8D}", 0, buttonsy - hud_button_insets.top, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
         end
         if not at_bottom then
-            ctx:draw_text("\u{8E}", 0, -.8, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
+            ctx:draw_text("\u{8E}", 0, -buttonsy + hud_button_insets.bottom, buttonssize, buttonssize, Color:white(), VANILLA_TEXT_ALIGNMENT.CENTER, VANILLA_FONT_STYLE.BOLD)
         end
     end, ON.RENDER_POST_HUD)
 
@@ -470,6 +479,7 @@ return {
     allow_dismissal_input = allow_dismissal_input,
     disable_dismissal_input = disable_dismissal_input,
     set_show_hud_buttons = set_show_hud_buttons,
+    set_hud_button_insets = set_hud_button_insets,
     set_max_zoom = set_max_zoom,
     set_max_zoom_co = set_max_zoom_co,
     set_min_zoom = set_min_zoom,
