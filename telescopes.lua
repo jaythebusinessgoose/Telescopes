@@ -25,7 +25,7 @@ local reset_variable_callbacks = {}
 local hud_callback = nil
 
 local telescopes = {}
-local telescope_activated = false 
+local telescope_activated = false
 local telescope_was_activated = nil
 local telescope_button_closed = false
 
@@ -307,7 +307,7 @@ local function activate()
     if active then return end
     active = true
     button_prompts.activate()
-    function spawn_telescope(x, y, layer, facing_right)
+    local function spawn_telescope(x, y, layer, facing_right)
         local new_telescope = spawn_entity(ENT_TYPE.ITEM_TELESCOPE, x, y, layer, 0, 0)
         telescopes[#telescopes+1] = new_telescope
         local telescope_entity = get_entity(new_telescope)
@@ -318,7 +318,29 @@ local function activate()
             -- Turn the telescope to the right.
             telescope_entity.flags = clr_flag(telescope_entity.flags, ENT_FLAG.FACING_LEFT)
         end
-        button_prompts.spawn_button_prompt(button_prompts.PROMPT_TYPE.VIEW, x, y, layer)
+        button_prompts.spawn_button_prompt_on(button_prompts.PROMPT_TYPE.VIEW, new_telescope, function()
+            -- Begin telescope interaction when the door button is pressed within a tile of the
+            -- telescope.
+            telescope_activated = true
+            telescope_was_activated = nil
+            telescope_button_closed = false
+
+            -- Do not focus on the player while interacting with the telescope.
+            state.camera.focused_entity_uid = -1
+
+            -- Zoom the camera out and move the focus of the camera so that the camera is in
+            -- bounds with the new zoom level.
+            move_camera_focus_within_bounds()
+            zoom(zoom_level_fitting_bounds())
+
+            -- While looking through the telescope, the player should not be able to make any
+            -- inputs. Instead, the movement keys will move the camera and the bomb key will
+            -- dismiss the telescope.
+            if #players > 0 then
+                steal_input(players[1].uid)
+            end
+            button_prompts.hide_button_prompts(true)
+        end)
     end
     telescope_right_tc = set_pre_tile_code_callback(function(x, y, layer)
         spawn_telescope(x, y, layer, true)
@@ -331,42 +353,14 @@ local function activate()
         return true
     end, "telescope_left")
 
-    telescope_camera_function = set_callback(function() 
+    telescope_camera_function = set_callback(function()
         if #players < 1 or not telescopes then return end
-        
+
         local camera = state.camera
         local player = players[1]
         if not telescope_activated and telescope_was_activated == nil then
             if not telescope_button_closed and not player:is_button_pressed(BUTTON.DOOR) then
                 telescope_button_closed = true
-            end
-            for _, telescope in ipairs(telescopes) do
-                if telescope_button_closed and
-                        telescope and get_entity(telescope) and
-                        player.layer == get_entity(telescope).layer and
-                        distance(player.uid, telescope) <= 1 and
-                        player:is_button_pressed(BUTTON.DOOR) then
-                    -- Begin telescope interaction when the door button is pressed within a tile of the
-                    -- telescope.
-                    telescope_activated = true
-                    telescope_was_activated = nil
-                    telescope_button_closed = false
-
-                    -- Do not focus on the player while interacting with the telescope.
-                    camera.focused_entity_uid = -1
-
-                    -- Zoom the camera out and move the focus of the camera so that the camera is in
-                    -- bounds with the new zoom level.
-                    move_camera_focus_within_bounds()
-                    zoom(zoom_level_fitting_bounds())
-
-                    -- While looking through the telescope, the player should not be able to make any
-                    -- inputs. Instead, the movement keys will move the camera and the bomb key will
-                    -- dismiss the telescope.
-                    steal_input(player.uid)
-                    button_prompts.hide_button_prompts(true)
-                    break
-                end
             end
         end
 
@@ -386,7 +380,7 @@ local function activate()
                 telescope_button_closed = not test_flag(buttons, 6)
                 return
             end
-            
+
             local camera_speed = .3
             if test_flag(buttons, 11) then -- up_key
                 camera.focus_y = camera.focus_y + camera_speed
