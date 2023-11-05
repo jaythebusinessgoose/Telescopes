@@ -145,6 +145,7 @@ local max_zoom = 30
 local max_zoom_co = 22
 local min_zoom = 13.5
 local default_zoom = 13.5
+local default_shop_zoom = 12.5
 local function set_max_zoom(zoom)
     max_zoom = zoom
 end
@@ -296,7 +297,7 @@ local function camera_at_bounds()
 end
 
 local function reset_telescopes()
-    zoom(default_zoom)
+    zoom(default_zoom, default_shop_zoom)
     telescopes = {}
     telescope_activated = false
     telescope_was_activated = nil
@@ -374,7 +375,7 @@ local function activate()
                 -- cause a bomb to be thrown or another action.
                 telescope_was_activated = state.time_level
                 -- Zoom back to the original zoom level.
-                zoom(default_zoom)
+                zoom(default_zoom, default_shop_zoom)
                 -- Make the camera follow the player again.
                 state.camera.focused_entity_uid = player.uid
                 telescope_button_closed = not test_flag(buttons, 6)
